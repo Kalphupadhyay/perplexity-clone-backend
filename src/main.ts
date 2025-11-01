@@ -9,7 +9,7 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-
+  app.enableCors();
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -20,4 +20,4 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 8000);
 }
-bootstrap();
+void bootstrap();
