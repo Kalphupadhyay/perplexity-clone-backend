@@ -1,13 +1,11 @@
 import { Injectable, MessageEvent } from '@nestjs/common';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import OpenAI from 'openai';
-
-import { Observable, Subject } from 'rxjs';
-import { Stream } from 'openai/streaming';
+import { ChatRequestDto } from './dto/chatRequest.dto';
+import { ApiResponse } from 'src/core/dto/api-response.dto';
 
 @Injectable()
 export class ChatService {
-  private messageStream = new Subject<string>(); // holds new messages
   private openai = new OpenAI({
     apiKey: process.env.GEMINI_API_KEY,
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
@@ -20,34 +18,44 @@ export class ChatService {
     },
   ];
 
-  async chatMessage(message: string): Promise<Observable<string>> {
+  async chatMessage(responseBody: ChatRequestDto) {
     this.messages.push({
       role: 'user',
-      content: message,
+      content: responseBody.message,
     });
 
-    const stream = await this.openai.chat.completions.create({
+    const response = await this.openai.chat.completions.create({
       model: 'gemini-2.0-flash',
       messages: this.messages,
-      stream: true,
     });
-    void this.startChatStream(stream);
-    return this.messageStream.asObservable();
+
+    this.messages.push({
+      role: 'assistant',
+      content: response.choices[0].message.content,
+    });
+
+    return new ApiResponse({
+      data: response.choices[0].message.content,
+      message: 'response from AI',
+      statusCode: 200,
+      success: true,
+    });
   }
 
-  async startChatStream(
-    stream: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  ) {
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      console.log('Received chunk content:', content);
-      if (content) {
-        this.messageStream.next(content.trim());
-      }
-      if (chunk.choices[0]?.finish_reason) {
-        break;
-      }
-    }
-    this.messageStream.complete();
-  }
+  // async startChatStream(
+  //   stream: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
+  // ) {
+  //   for await (const chunk of stream) {
+  //     const content = chunk.choices[0]?.delta?.content || '';
+
+  //     if (content) {
+  //       this.messageStream.next(content.trim());
+  //     }
+  //     if (chunk.choices[0]?.finish_reason) {
+  //       this.messageStream.next('Done');
+  //       break;
+  //     }
+  //   }
+  //   this.messageStream.complete();
+  // }
 }
