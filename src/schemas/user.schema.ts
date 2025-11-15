@@ -12,7 +12,7 @@ export interface UserMethods {
   generateTempToken(): {
     unHashedToken: string;
     hashedToken: string;
-    tokenExpiry: number;
+    tokenExpiry: Date;
   };
 }
 
@@ -31,15 +31,6 @@ class Avatar {
 export class User {
   @Prop({ type: Avatar, default: () => ({}) })
   avatar: Avatar;
-
-  @Prop({
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true,
-    index: true,
-  })
-  username: string;
 
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
   email: string;
@@ -90,7 +81,6 @@ UserSchema.methods.generateAccessToken = function (this: UserDocument) {
     {
       _id: this._id,
       email: this.email,
-      username: this.username,
     },
     process.env.ACCESS_TOKEN_SECRET as string,
     { expiresIn: '1d' },

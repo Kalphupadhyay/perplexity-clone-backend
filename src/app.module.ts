@@ -13,6 +13,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     ChatModule,
     RagModule,
     ConfigModule.forRoot(),
+
     MongooseModule.forRoot(
       process.env.MONGO_URI || 'mongodb://localhost:27017/project-manager',
     ),
